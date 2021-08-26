@@ -73,28 +73,30 @@ func (scanner *Scanner) scanModule(module block.Module, rules []rule.Rule) []res
 			if rule.IsRuleRequiredForBlock(&r, checkBlock) {
 				debug.Log("Running rule for %s on %s (%s)...", r.ID(), checkBlock.Reference(), checkBlock.Range().Filename)
 				ruleResults := rule.CheckRule(&r, checkBlock, module, scanner.ignoreCheckErrors)
-				if scanner.includePassed && ruleResults.All() == nil {
-					res := result.New(checkBlock).
-						WithLegacyRuleID(r.LegacyID).
-						WithRuleID(r.ID()).
-						WithDescription("Resource '%s' passed check: %s", checkBlock.FullName(), r.Documentation.Summary).
-						WithStatus(result.Passed).
-						WithImpact(r.Documentation.Impact).
-						WithResolution(r.Documentation.Resolution).
-						WithSeverity(r.DefaultSeverity)
-					results = append(results, *res)
-				} else if ruleResults != nil {
-					for _, ruleResult := range ruleResults.All() {
-						if ruleResult.Severity == severity.None {
-							ruleResult.Severity = r.DefaultSeverity
-						}
-						if !scanner.includeIgnored && (ruleResult.IsIgnored(scanner.workspaceName) || checkInList(ruleResult.RuleID, ruleResult.LegacyRuleID, scanner.excludedRuleIDs)) {
-							// rule was ignored
-							metrics.Add(metrics.IgnoredChecks, 1)
-							debug.Log("Ignoring '%s'", ruleResult.RuleID)
-						} else {
-							results = append(results, *ruleResult)
+				if ruleResults != nil {
+					if scanner.includePassed && ruleResults.All() == nil {
+						res := result.New(checkBlock).
+							WithLegacyRuleID(r.LegacyID).
+							WithRuleID(r.ID()).
+							WithDescription("Resource '%s' passed check: %s", checkBlock.FullName(), r.Documentation.Summary).
+							WithStatus(result.Passed).
+							WithImpact(r.Documentation.Impact).
+							WithResolution(r.Documentation.Resolution).
+							WithSeverity(r.DefaultSeverity)
+						results = append(results, *res)
+					} else {
+						for _, ruleResult := range ruleResults.All() {
+							if ruleResult.Severity == severity.None {
+								ruleResult.Severity = r.DefaultSeverity
+							}
+							if !scanner.includeIgnored && (ruleResult.IsIgnored(scanner.workspaceName) || checkInList(ruleResult.RuleID, ruleResult.LegacyRuleID, scanner.excludedRuleIDs)) {
+								// rule was ignored
+								metrics.Add(metrics.IgnoredChecks, 1)
+								debug.Log("Ignoring '%s'", ruleResult.RuleID)
+							} else {
+								results = append(results, *ruleResult)
 
+							}
 						}
 					}
 				}
