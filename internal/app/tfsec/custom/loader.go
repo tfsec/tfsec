@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -31,13 +30,12 @@ func Load(customCheckDir string) error {
 }
 
 func loadCustomChecks(customCheckDir string) error {
-	files, err := listFiles(customCheckDir, ".*_tfchecks.*")
+	checkFiles, err := listFiles(customCheckDir, ".*_tfchecks.*")
 	if err != nil {
 		return err
 	}
 	var errorList []string
-	for _, file := range files {
-		checkFilePath := path.Join(customCheckDir, file.Name())
+	for _, checkFilePath := range checkFiles {
 		err = Validate(checkFilePath)
 		if err != nil {
 			errorList = append(errorList, err.Error())
@@ -86,24 +84,24 @@ func loadCheckFile(checkFilePath string) (ChecksFile, error) {
 	return checks, nil
 }
 
-func listFiles(dir, pattern string) ([]os.FileInfo, error) {
-	files, err := ioutil.ReadDir(dir)
+func listFiles(dir, pattern string) ([]string, error) {
+	filteredFiles := []string{}
+	err := filepath.Walk(dir,
+		func(filePath string, file os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			matched, err := regexp.MatchString(pattern, file.Name())
+			if err != nil {
+				return err
+			}
+			if matched {
+				filteredFiles = append(filteredFiles, filePath)
+			}
+			return nil
+		})
 	if err != nil {
 		return nil, err
-	}
-
-	filteredFiles := []os.FileInfo{}
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		matched, err := regexp.MatchString(pattern, file.Name())
-		if err != nil {
-			return nil, err
-		}
-		if matched {
-			filteredFiles = append(filteredFiles, file)
-		}
 	}
 	return filteredFiles, nil
 }
