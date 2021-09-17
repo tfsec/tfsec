@@ -33,7 +33,10 @@ resource "azurerm_app_service" "good_example" {
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
   app_service_plan_id = azurerm_app_service_plan.example.id
-  detailed_error_messages_enabled = true
+
+  logs {
+    detailed_error_messages_enabled = true
+  }
 }
 `},
 			Links: []string{
@@ -49,15 +52,23 @@ resource "azurerm_app_service" "good_example" {
 		},
 		DefaultSeverity: severity.Low,
 		CheckFunc: func(set result.Set, resourceBlock block.Block, module block.Module) {
-			detailedErrorMessages := resourceBlock.GetAttribute("detailed_error_messages_enabled")
-			if detailedErrorMessages.IsNil() {
+			if resourceBlock.MissingChild("logs") {
 				set.AddResult().
-					WithDescription("Resource '%s' is missing the detailed_error_messages_enabled attribute", resourceBlock.FullName())
+					WithDescription("Resource '%s' does not have logs enabled", resourceBlock.FullName())
+				return
 			}
-			if detailedErrorMessages.IsFalse() {
+
+			logProps := resourceBlock.GetBlock("logs")
+			if logProps.MissingChild("detailed_error_messages_enabled") {
 				set.AddResult().
-					WithDescription("Resource '%s' does not have detailed_error_messages_enabled set to true", resourceBlock.FullName()).
-					WithAttribute(detailedErrorMessages)
+					WithDescription("Resource '%s' does not have logs.detailed_error_messages_enabled block", resourceBlock.FullName()).WithBlock(logProps)
+				return
+			}
+			detailedErrorMessagesEnabled := logProps.GetAttribute("detailed_error_messages_enabled")
+			if detailedErrorMessagesEnabled.IsFalse() {
+				set.AddResult().
+					WithDescription("Resource '%s' does not have logs.detailed_error_messages_enabled set to true", resourceBlock.FullName()).
+					WithAttribute(detailedErrorMessagesEnabled)
 			}
 		},
 	})
