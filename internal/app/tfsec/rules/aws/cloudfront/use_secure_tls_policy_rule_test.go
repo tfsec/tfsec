@@ -28,7 +28,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 			source: `
 resource "aws_cloudfront_distribution" "s3_distribution" {
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = false
   }
 }`,
 			mustIncludeResultCode: expectedCode,
@@ -38,11 +38,21 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 			source: `
 resource "aws_cloudfront_distribution" "s3_distribution" {
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = false
 	minimum_protocol_version = "TLSv1.2_2018"
   }
 }`,
 			mustIncludeResultCode: expectedCode,
+		},
+		{
+			name: "check don't trigger if cloudfront_default_certificate is set to true",
+			source: `
+resource "aws_cloudfront_distribution" "s3_distribution" {
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}`,
+			mustExcludeResultCode: expectedCode,
 		},
 	}
 

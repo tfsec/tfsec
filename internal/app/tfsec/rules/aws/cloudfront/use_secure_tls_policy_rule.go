@@ -29,7 +29,7 @@ You should not use outdated/insecure TLS versions for encryption. You should be 
 			BadExample: []string{`
 resource "aws_cloudfront_distribution" "bad_example" {
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = false
     minimum_protocol_version = "TLSv1.0"
   }
 }
@@ -37,7 +37,7 @@ resource "aws_cloudfront_distribution" "bad_example" {
 			GoodExample: []string{`
 resource "aws_cloudfront_distribution" "good_example" {
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = false
     minimum_protocol_version = "TLSv1.2_2021"
   }
 }
@@ -57,6 +57,11 @@ resource "aws_cloudfront_distribution" "good_example" {
 			if viewerCertificateBlock.IsNil() {
 				set.AddResult().
 					WithDescription("Resource '%s' defines outdated SSL/TLS policies (missing viewer_certificate block)", resourceBlock.FullName())
+				return
+			}
+
+			defaultCertificateAttr := viewerCertificateBlock.GetAttribute("cloudfront_default_certificate")
+			if defaultCertificateAttr.IsTrue() {
 				return
 			}
 
