@@ -1,4 +1,4 @@
-FROM alpine:3.17.2 as nobody
+FROM alpine:3.21.2 as nobody
 
 FROM scratch
 # use a non-privileged user but need to add it in
